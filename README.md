@@ -1,10 +1,13 @@
 # DESCRIÇÃO
 
-        Este foi criada para ajudar no desenvolvimento de uma atividade de Sistema Operacionais(SO) do curso de Analise e Desenvolvimento de Sistemas (TADS) do  IFRN-CNAT.
+        Este foi criada para ajudar no desenvolvimento de uma atividade de Sistema Operacionais(SO)  
+        do curso de Analise e Desenvolvimento de Sistemas (TADS) do  IFRN-CNAT.
 
 ## Objetivo
 
-        A finalidade da atividade é aprender como funcionam o parelelismo dos sistemas operacionais  (Threads) e conhecer um pouco de uma nova linguagem de programação.
+        A finalidade da atividade é aprender como funcionam o parelelismo  
+         dos sistemas operacionais  (Threads) e conhecer um pouco de uma nova  
+        linguagem de programação.
 
 ## Tecnologias usadas
     * A linguagem GO foi escolhida para desenvolver a ativida descrita.
