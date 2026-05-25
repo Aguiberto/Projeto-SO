@@ -14,6 +14,7 @@ const (
     defaultHost               = "echo-server"               // Nome do servidor no docker
     defaultPort               = "5000"                      // Porta de conexão
     defaultMessage            = "Olá do cliente echo!"
+<<<<<<< HEAD:cliente/main.go
     bufferSize                = 1024                        // tamanho da leitura dos dados
     maxConnectionAttempts     = 15                          // Quantidade de tentativas de reconexão
     connectionTimeoutSeconds  = 5                           // Tempo máximo esperando a resposta do servidor
@@ -24,12 +25,28 @@ const (
 func runClient(id int, address, message string, timeout time.Duration, wg *sync.WaitGroup, results chan<- bool) {
 
     // avisa que a função foi concluída
+=======
+    bufferSize                = 1024
+    maxConnectionAttempts     = 15
+    connectionTimeoutSeconds  = 5
+    defaultStepDelay          = "1s"
+    clientCount               = 10
+)
+
+func runClient(id int, address, message string, timeout, stepDelay time.Duration, wg *sync.WaitGroup, results chan<- bool) {
+>>>>>>> 71c64619b026a4cbc70329c9e8ae23c7e8a77657:cliente/main_cliente.go
     defer wg.Done()
 
     // loop de tentativas caso o servidor demora a subir no Docker
     for attempt := 1; attempt <= maxConnectionAttempts; attempt++ {
+<<<<<<< HEAD:cliente/main.go
 
         // Tenta conectar ao servidor TCP
+=======
+        fmt.Printf("[echo-client %d] Aguardando %s antes da tentativa %d/%d...\n", id, stepDelay, attempt, maxConnectionAttempts)
+        time.Sleep(stepDelay)
+
+>>>>>>> 71c64619b026a4cbc70329c9e8ae23c7e8a77657:cliente/main_cliente.go
         conn, err := net.DialTimeout("tcp", address, timeout)
         if err != nil {
             fmt.Printf("[echo-client %d] Tentativa %d/%d falhou: %v\n", id, attempt, maxConnectionAttempts, err)
@@ -38,8 +55,12 @@ func runClient(id int, address, message string, timeout time.Duration, wg *sync.
         }
 
         fmt.Printf("[echo-client %d] Conectado em %s\n", id, address)
+<<<<<<< HEAD:cliente/main.go
 
         // Envia a mensagem de texto convertida em bytes para o servidor
+=======
+        fmt.Printf("[echo-client %d] Enviando mensagem...\n", id)
+>>>>>>> 71c64619b026a4cbc70329c9e8ae23c7e8a77657:cliente/main_cliente.go
         _, err = conn.Write([]byte(message))
         if err != nil {
             conn.Close()
@@ -53,8 +74,14 @@ func runClient(id int, address, message string, timeout time.Duration, wg *sync.
             _ = tcpConn.CloseWrite()
         }
 
+<<<<<<< HEAD:cliente/main.go
 
         // Cria o buffer (espaço em memória) para ler a resposta do servidor
+=======
+        fmt.Printf("[echo-client %d] Mensagem enviada, aguardando a resposta...\n", id)
+        time.Sleep(stepDelay)
+
+>>>>>>> 71c64619b026a4cbc70329c9e8ae23c7e8a77657:cliente/main_cliente.go
         responseBytes := make([]byte, 0, bufferSize)
         buffer := make([]byte, bufferSize)
         for {
@@ -112,16 +139,37 @@ func main() {
     address := net.JoinHostPort(host, port)
     timeout := time.Duration(connectionTimeoutSeconds) * time.Second
 
+<<<<<<< HEAD:cliente/main.go
     
     var wg sync.WaitGroup // funciona como contador 
     results := make(chan bool, clientCount) // canal para receber os resultados
+=======
+    delayStr := os.Getenv("ECHO_STEP_DELAY")
+    if delayStr == "" {
+        delayStr = defaultStepDelay
+    }
+
+    stepDelay, err := time.ParseDuration(delayStr)
+    if err != nil || stepDelay < 0 {
+        fmt.Fprintf(os.Stderr, "[echo-client] ECHO_STEP_DELAY inválido: %s. Usando %s por padrão.\n", delayStr, defaultStepDelay)
+        stepDelay = time.Second
+    }
+
+    var wg sync.WaitGroup
+    results := make(chan bool, clientCount)
+>>>>>>> 71c64619b026a4cbc70329c9e8ae23c7e8a77657:cliente/main_cliente.go
 
     // Aqui acontece o disparo das THREADS
     for i := 1; i <= clientCount; i++ {
+<<<<<<< HEAD:cliente/main.go
         wg.Add(1) // Avisa a criação de mais uma THREADS
 
         // Cria uma Goroutine que permite executar a função em segundo plano enquanto o laço permanece em execução
         go runClient(i, address, message, timeout, &wg, results)
+=======
+        wg.Add(1)
+        go runClient(i, address, message, timeout, stepDelay, &wg, results)
+>>>>>>> 71c64619b026a4cbc70329c9e8ae23c7e8a77657:cliente/main_cliente.go
     }
 
     // garante que o programa não vai encerrar enquanto o todas threads não tiverem sido executadas
