@@ -6,6 +6,7 @@ import (
     "net"
     "os"
     "strings"
+    "time"
 )
 
 // gerenciador de conexões do servidor echo
@@ -25,6 +26,7 @@ func handleConnection(conn net.Conn) {
         // ler a mensagem do cliente
         text := scanner.Text()
         fmt.Printf("[SERVIDOR] Recebido de %s: %s\n", clientAddr, text)
+        time.Sleep(2 * time.Second)
 
         // encerra a comunicação se o cliente enviar "SAIR"
         if strings.EqualFold(strings.TrimSpace(text), "SAIR") {
