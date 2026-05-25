@@ -15,13 +15,17 @@ const (
     bufferSize                = 1024
     maxConnectionAttempts     = 15
     connectionTimeoutSeconds  = 5
+    defaultStepDelay          = "1s"
     clientCount               = 10
 )
 
-func runClient(id int, address, message string, timeout time.Duration, wg *sync.WaitGroup, results chan<- bool) {
+func runClient(id int, address, message string, timeout, stepDelay time.Duration, wg *sync.WaitGroup, results chan<- bool) {
     defer wg.Done()
 
     for attempt := 1; attempt <= maxConnectionAttempts; attempt++ {
+        fmt.Printf("[echo-client %d] Aguardando %s antes da tentativa %d/%d...\n", id, stepDelay, attempt, maxConnectionAttempts)
+        time.Sleep(stepDelay)
+
         conn, err := net.DialTimeout("tcp", address, timeout)
         if err != nil {
             fmt.Printf("[echo-client %d] Tentativa %d/%d falhou: %v\n", id, attempt, maxConnectionAttempts, err)
@@ -30,6 +34,7 @@ func runClient(id int, address, message string, timeout time.Duration, wg *sync.
         }
 
         fmt.Printf("[echo-client %d] Conectado em %s\n", id, address)
+        fmt.Printf("[echo-client %d] Enviando mensagem...\n", id)
         _, err = conn.Write([]byte(message))
         if err != nil {
             conn.Close()
@@ -41,6 +46,9 @@ func runClient(id int, address, message string, timeout time.Duration, wg *sync.
         if tcpConn, ok := conn.(*net.TCPConn); ok {
             _ = tcpConn.CloseWrite()
         }
+
+        fmt.Printf("[echo-client %d] Mensagem enviada, aguardando a resposta...\n", id)
+        time.Sleep(stepDelay)
 
         responseBytes := make([]byte, 0, bufferSize)
         buffer := make([]byte, bufferSize)
@@ -93,12 +101,23 @@ func main() {
     address := net.JoinHostPort(host, port)
     timeout := time.Duration(connectionTimeoutSeconds) * time.Second
 
+    delayStr := os.Getenv("ECHO_STEP_DELAY")
+    if delayStr == "" {
+        delayStr = defaultStepDelay
+    }
+
+    stepDelay, err := time.ParseDuration(delayStr)
+    if err != nil || stepDelay < 0 {
+        fmt.Fprintf(os.Stderr, "[echo-client] ECHO_STEP_DELAY inválido: %s. Usando %s por padrão.\n", delayStr, defaultStepDelay)
+        stepDelay = time.Second
+    }
+
     var wg sync.WaitGroup
     results := make(chan bool, clientCount)
 
     for i := 1; i <= clientCount; i++ {
         wg.Add(1)
-        go runClient(i, address, message, timeout, &wg, results)
+        go runClient(i, address, message, timeout, stepDelay, &wg, results)
     }
 
     wg.Wait()

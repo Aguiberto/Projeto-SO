@@ -8,22 +8,31 @@ import (
     "strings"
 )
 
+// gerenciador de conexões do servidor echo
 func handleConnection(conn net.Conn) {
+
+    // Garantir que a conexão seja fechada quando a função terminar
     defer conn.Close()
 
+    // Obter o endereço do cliente
     clientAddr := conn.RemoteAddr().String()
     fmt.Printf("[SERVIDOR] Novo cliente conectado: %s\n", clientAddr)
 
+
     scanner := bufio.NewScanner(conn)
     for scanner.Scan() {
+
+        // ler a mensagem do cliente
         text := scanner.Text()
         fmt.Printf("[SERVIDOR] Recebido de %s: %s\n", clientAddr, text)
 
+        // encerra a comunicação se o cliente enviar "SAIR"
         if strings.EqualFold(strings.TrimSpace(text), "SAIR") {
             _, _ = conn.Write([]byte("Conexão encerrada pelo servidor. Tchau!"))
             break
         }
 
+        // responder com a mesma mensagem (ECHO)
         _, err := conn.Write([]byte(text))
         if err != nil {
             fmt.Printf("[SERVIDOR] Erro ao responder %s: %v\n", clientAddr, err)
@@ -31,6 +40,7 @@ func handleConnection(conn net.Conn) {
         }
     }
 
+    // Verifica se houve algum erro durante a leitura da conexão
     if err := scanner.Err(); err != nil {
         fmt.Printf("[SERVIDOR] Erro de leitura em %s: %v\n", clientAddr, err)
     }
