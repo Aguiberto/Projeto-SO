@@ -16,10 +16,19 @@
 
 ## ESTRUTURA
 
-*Pasta cliente:*  há o cógido fonte do Cliente e a configuração do docker
+        O projeto tem dois diretórios, cada uma para um sistema Cliente-Servidor com e sem Threads .
 
-*Pasta servidor:*O mesmo vale para a pasa servidor
 
-*docker-compose*: serve para orquestrar a inicialização do servidor e das 10 instancias dos clientes simultaneamente
+                *Pasta Cliente-Servidor_Simples:*  
 
-Link da apresentação [APRESENTAÇÃO](ColarOLinkAqui)
+                *Pasta Cliente-Servidor_Threads:*
+
+        Em cada pasta há o seguinte contéudo:
+
+        * Uma subpasta para o código fonte do cliente e a configuração do contaíner.
+
+        * Uma subpasta para o código fonte do servidor e a configuração do conteiner.
+
+        * docker-compose: serve para orquestrar a inicialização do servidor e das 10 instancias dos clientes simultaneamente.
+
+Link da [APRESENTAÇÃO](https://www.canva.com/design/DAHK4a6QUDI/IZlwl-lmrj3GqT_SNV1Xjg/edit)

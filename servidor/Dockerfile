@@ -1,5 +1,0 @@
-FROM golang:1.22-alpine
-WORKDIR /app
-COPY . .
-RUN go build -o /usr/local/bin/echo-server .
-CMD ["/usr/local/bin/echo-server"]
