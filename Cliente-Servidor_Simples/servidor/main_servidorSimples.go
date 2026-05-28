@@ -10,12 +10,8 @@ import (
 )
 
 func handleConnection(conn net.Conn) {
-	defer conn.Close()
+	// Removemos o defer conn.Close() para controlar o fechamento manualmente no momento exato
 	clientAddr := conn.RemoteAddr().String()
-
-	// 1. Servidor detecta a conexão
-	// (vai aparecer logo após o print "1" do cliente)
-	// Não colocamos print aqui para não poluir, focamos no fluxo da mensagem:
 
 	scanner := bufio.NewScanner(conn)
 	for scanner.Scan() {
@@ -30,7 +26,7 @@ func handleConnection(conn net.Conn) {
 			break
 		}
 
-		// Envia o eco
+		// Envia o eco de volta para o cliente
 		_, err := conn.Write([]byte(text))
 		if err != nil {
 			fmt.Printf("[SERVIDOR] Erro ao responder %s: %v\n", clientAddr, err)
@@ -42,15 +38,24 @@ func handleConnection(conn net.Conn) {
 		fmt.Printf("[SERVIDOR] Erro de leitura em %s: %v\n", clientAddr, err)
 	}
 
-	// Dá um tempo para o cliente receber os dados e printar o passo "4"
-	time.Sleep(1500 * time.Millisecond)
+	// === SINCRONIZAÇÃO CAUSAL ===
+	// Fechamos a conexão com o cliente primeiro. 
+	// Isso força o container do cliente a terminar de ler, sair do loop dele e printar o Passo 4.
+	conn.Close()
 
-	// 5. Servidor informa a finalização
+	// Uma pausa de meio segundo garante que o Docker processe e renderize o log do cliente primeiro
+	time.Sleep(500 * time.Millisecond)
+
+	// 5. Servidor informa a finalização (Garantido no final de tudo)
 	fmt.Printf("[SERVIDOR] 5. Servidor informa a finalização da conexão com %s.\n", clientAddr)
 }
 
 func main() {
-	port := os.Getenv("ECHO_PORT"); if port == "" { port = "5000" }
+	port := os.Getenv("ECHO_PORT")
+	if port == "" {
+		port = "5000"
+	}
+
 	address := ":" + port
 	listener, err := net.Listen("tcp", address)
 	if err != nil {
@@ -67,6 +72,7 @@ func main() {
 			fmt.Printf("[SERVIDOR] Erro ao aceitar conexão: %v\n", err)
 			continue
 		}
+		// Execução estritamente síncrona (Sem a palavra-chave 'go')
 		handleConnection(conn)
 	}
 }

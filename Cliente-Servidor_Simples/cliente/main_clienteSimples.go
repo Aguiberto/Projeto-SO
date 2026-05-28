@@ -14,8 +14,8 @@ const (
 	bufferSize               = 1024
 	maxConnectionAttempts    = 15
 	connectionTimeoutSeconds = 5
-	defaultStepDelay         = "2s" 
-	clientCount              = 10   
+	defaultStepDelay         = "2s" // Tempo de espera entre os passos
+	clientCount              = 10   // Executaremos 10 clientes, um após o outro
 )
 
 func runClient(id int, address, message string, timeout, stepDelay time.Duration) bool {
@@ -46,8 +46,8 @@ func runClient(id int, address, message string, timeout, stepDelay time.Duration
 			_ = tcpConn.CloseWrite()
 		}
 
-		// Pausa para dar tempo de o Servidor processar e printar na ordem correta
-		time.Sleep(stepDelay) 
+		// Pequena pausa para a mensagem trafegar na rede sem atropelos
+		time.Sleep(190 * time.Millisecond) 
 
 		// 4. Cliente lê o retorno do Eco
 		responseBytes := make([]byte, 0, bufferSize)
@@ -61,13 +61,13 @@ func runClient(id int, address, message string, timeout, stepDelay time.Duration
 				break
 			}
 		}
-		conn.Close()
+		conn.Close() 
 		response := string(responseBytes)
 
 		fmt.Printf("[echo-client %d] 4. Cliente confirma o retorno do eco: %s\n", id, response)
 		
-		// Pequena pausa antes de liberar o loop para o log do servidor fechar com calma
-		time.Sleep(1 * time.Second)
+		// Espera o delay padrão antes de permitir o encerramento do ciclo do cliente
+		time.Sleep(stepDelay)
 
 		if response != message {
 			fmt.Printf("[echo-client %d] Erro: Resposta diferente da enviada.\n", id)
@@ -83,14 +83,18 @@ func main() {
 	host := os.Getenv("ECHO_HOST"); if host == "" { host = defaultHost }
 	port := os.Getenv("ECHO_PORT"); if port == "" { port = defaultPort }
 	message := os.Getenv("ECHO_MESSAGE"); if message == "" { message = defaultMessage }
+
 	address := net.JoinHostPort(host, port)
 	timeout := time.Duration(connectionTimeoutSeconds) * time.Second
+
 	delayStr := os.Getenv("ECHO_STEP_DELAY"); if delayStr == "" { delayStr = defaultStepDelay }
 	stepDelay, _ := time.ParseDuration(delayStr)
 
 	fmt.Println("[SISTEMA] Iniciando simulação sequencial perfeita (Sem Threads)...")
 
 	success := true
+	
+	// Loop sequencial linear puro (Sem concorrência)
 	for i := 1; i <= clientCount; i++ {
 		fmt.Printf("\n=============================================\n")
 		fmt.Printf("          INICIANDO CICLO DO CLIENTE %d      \n", i)
@@ -98,11 +102,15 @@ func main() {
 		
 		if !runClient(i, address, message, timeout, stepDelay) {
 			success = false
-			break
+			break 
 		}
-		time.Sleep(2 * time.Second) 
+		
+		// Margem para o terminal organizar as quebras de linha entre clientes
+		time.Sleep(1 * time.Second) 
 	}
 
-	if !success { os.Exit(1) }
+	if !success {
+		os.Exit(1)
+	}
 	fmt.Println("\n[SISTEMA] Todos os 10 clientes foram atendidos com sucesso, um por vez!")
 }
