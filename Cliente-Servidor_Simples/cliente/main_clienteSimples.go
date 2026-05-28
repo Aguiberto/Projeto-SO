@@ -14,15 +14,14 @@ const (
 	bufferSize               = 1024
 	maxConnectionAttempts    = 15
 	connectionTimeoutSeconds = 5
-	defaultStepDelay         = "2s" // Tempo de espera entre os passos
-	clientCount              = 10   // Executaremos 10 clientes, um após o outro
+	defaultStepDelay         = "2s" 
+	clientCount              = 10   
 )
 
-// Agora é uma função comum, sem WaitGroup e sem Canais
 func runClient(id int, address, message string, timeout, stepDelay time.Duration) bool {
 	for attempt := 1; attempt <= maxConnectionAttempts; attempt++ {
 		
-		// 1. Tenta conectar
+		// 1. Cliente tenta se conectar
 		conn, err := net.DialTimeout("tcp", address, timeout)
 		if err != nil {
 			fmt.Printf("[echo-client %d] Tentativa %d/%d falhou: %v\n", id, attempt, maxConnectionAttempts, err)
@@ -30,26 +29,27 @@ func runClient(id int, address, message string, timeout, stepDelay time.Duration
 			continue
 		}
 
-		fmt.Printf("[echo-client %d] ---> CONECTADO em %s\n", id, address)
-		time.Sleep(stepDelay) // Pausa para leitura
+		fmt.Printf("[echo-client %d] 1. Cliente se conecta.\n", id)
+		time.Sleep(stepDelay) 
 
-		// 2. Envia a mensagem
-		fmt.Printf("[echo-client %d] Enviando mensagem...\n", id)
+		// 2. Cliente envia a mensagem e já confirma o envio
 		_, err = conn.Write([]byte(message))
 		if err != nil {
 			conn.Close()
 			fmt.Printf("[echo-client %d] Erro ao enviar mensagem: %v\n", id, err)
 			return false
 		}
-
-		// Avisa o fechamento da escrita
+		fmt.Printf("[echo-client %d] 2. Cliente envia mensagem e confirma o envio.\n", id)
+		
+		// Fecha o fluxo de escrita para o servidor saber que o texto acabou
 		if tcpConn, ok := conn.(*net.TCPConn); ok {
 			_ = tcpConn.CloseWrite()
 		}
 
-		fmt.Printf("[echo-client %d] Mensagem enviada. Aguardando resposta do servidor...\n", id)
+		// Pausa para dar tempo de o Servidor processar e printar na ordem correta
+		time.Sleep(stepDelay) 
 
-		// 3. Lê o retorno (Echo)
+		// 4. Cliente lê o retorno do Eco
 		responseBytes := make([]byte, 0, bufferSize)
 		buffer := make([]byte, bufferSize)
 		for {
@@ -61,12 +61,13 @@ func runClient(id int, address, message string, timeout, stepDelay time.Duration
 				break
 			}
 		}
-
 		conn.Close()
 		response := string(responseBytes)
 
-		fmt.Printf("[echo-client %d] <--- RECEBIDO: %s\n", id, response)
-		time.Sleep(stepDelay) // Pausa para leitura antes de fechar o ciclo do cliente
+		fmt.Printf("[echo-client %d] 4. Cliente confirma o retorno do eco: %s\n", id, response)
+		
+		// Pequena pausa antes de liberar o loop para o log do servidor fechar com calma
+		time.Sleep(1 * time.Second)
 
 		if response != message {
 			fmt.Printf("[echo-client %d] Erro: Resposta diferente da enviada.\n", id)
@@ -79,40 +80,29 @@ func runClient(id int, address, message string, timeout, stepDelay time.Duration
 }
 
 func main() {
-	host := os.Getenv("ECHO_HOST")
-	if host == "" { host = defaultHost }
-	port := os.Getenv("ECHO_PORT")
-	if port == "" { port = defaultPort }
-	message := os.Getenv("ECHO_MESSAGE")
-	if message == "" { message = defaultMessage }
-
+	host := os.Getenv("ECHO_HOST"); if host == "" { host = defaultHost }
+	port := os.Getenv("ECHO_PORT"); if port == "" { port = defaultPort }
+	message := os.Getenv("ECHO_MESSAGE"); if message == "" { message = defaultMessage }
 	address := net.JoinHostPort(host, port)
 	timeout := time.Duration(connectionTimeoutSeconds) * time.Second
-
-	delayStr := os.Getenv("ECHO_STEP_DELAY")
-	if delayStr == "" { delayStr = defaultStepDelay }
+	delayStr := os.Getenv("ECHO_STEP_DELAY"); if delayStr == "" { delayStr = defaultStepDelay }
 	stepDelay, _ := time.ParseDuration(delayStr)
 
-	fmt.Println("[SISTEMA] Iniciando simulação sequencial (Sem Threads)...")
+	fmt.Println("[SISTEMA] Iniciando simulação sequencial perfeita (Sem Threads)...")
 
 	success := true
-	
-	// O LOOP AGORA É TOTALMENTE LINEAR!
-	// O cliente 'i+1' só vai começar quando a função runClient(i) terminar completamente e retornar.
 	for i := 1; i <= clientCount; i++ {
-		fmt.Printf("\n=== INICIANDO CICLO DO CLIENTE %d ===\n", i)
+		fmt.Printf("\n=============================================\n")
+		fmt.Printf("          INICIANDO CICLO DO CLIENTE %d      \n", i)
+		fmt.Printf("=============================================\n")
 		
 		if !runClient(i, address, message, timeout, stepDelay) {
 			success = false
-			break // Para o loop se algum falhar
+			break
 		}
-		
-		// Uma folga de 1 segundo entre um cliente e outro para o terminal respirar
-		time.Sleep(1 * time.Second) 
+		time.Sleep(2 * time.Second) 
 	}
 
-	if !success {
-		os.Exit(1)
-	}
+	if !success { os.Exit(1) }
 	fmt.Println("\n[SISTEMA] Todos os 10 clientes foram atendidos com sucesso, um por vez!")
 }
